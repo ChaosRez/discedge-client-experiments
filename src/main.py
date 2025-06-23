@@ -91,7 +91,7 @@ def run_scenario(scenario_path: str):
             database.add_message(session_db_id, "assistant", content.strip(), model_name=config.MODEL, scenario_name=scenario_name)
             perf_logger.log("send_completion", duration_ms, f"Prompt length: {len(prompt)}")
         else:
-            logger.error("No response from LLM client.")
+            logger.fatal("No response from LLM client.")
             perf_logger.log("send_completion", duration_ms, "Error: No response from client")
 
     perf_logger.close()
