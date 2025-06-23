@@ -5,6 +5,8 @@ import logging
 import os
 import yaml
 import sys
+import time
+from scenario_perf_logger import PerformanceLogger
 
 def setup_logging():
     """Sets up logging configuration."""
@@ -51,6 +53,8 @@ def run_scenario(scenario_path: str):
     logger.info(f"Running scenario: '{scenario_name}' for user: '{user_id}'")
     print(f"--- Running scenario: {scenario_name} ---")
 
+    perf_logger = PerformanceLogger(inference_mode=config.INFERENCE_MODE, scenario_name=scenario_name)
+
     user_db_id = database.add_user_if_not_exists(user_id)
     client = LLMClient(config.API_URL)
 
@@ -60,17 +64,23 @@ def run_scenario(scenario_path: str):
     for prompt in messages:
         print(f"You: {prompt}")
         logger.info(f"Sending prompt for session {server_session_id}: {prompt}")
+
+        start_time = time.perf_counter()
         response = client.send_completion(prompt, server_session_id)
+        end_time = time.perf_counter()
+        duration_ms = (end_time - start_time) * 1000
 
         if response:
             if server_session_id is None:
                 server_session_id = response.get("session_id")
+                perf_logger.set_session_id(server_session_id)
                 logger.info(f"New session ID from server: {server_session_id}")
                 if server_session_id:
                     session_db_id = database.create_session(server_session_id, user_db_id)
                 else:
                     logger.error("Did not receive session_id from server.")
                     print("Error: Did not receive session_id from server.")
+                    perf_logger.log("send_completion", duration_ms, "Error: No session_id received")
                     continue
 
             database.add_message(session_db_id, "user", prompt, model_name=config.MODEL, scenario_name=scenario_name)
@@ -79,8 +89,12 @@ def run_scenario(scenario_path: str):
             logger.info(f"Assistant response: {content}")
             print(f"Assistant:{content.strip()}")
             database.add_message(session_db_id, "assistant", content.strip(), model_name=config.MODEL, scenario_name=scenario_name)
+            perf_logger.log("send_completion", duration_ms, f"Prompt length: {len(prompt)}")
         else:
             logger.error("No response from LLM client.")
+            perf_logger.log("send_completion", duration_ms, "Error: No response from client")
+
+    perf_logger.close()
 
 def run_interactive_mode():
     """Handles the interactive chat session."""
