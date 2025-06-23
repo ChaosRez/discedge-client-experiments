@@ -9,10 +9,12 @@ MODEL = "Qwen1.5-0.5B-Chat-Q4_K_M"
 TEMPERATURE = 0
 SEED = 123
 STREAM = False
+INFERENCE_MODE = "tokenized"
 
 # Application Settings
 USER_ID = "u1"
-MODE = "tokenized"
+MODE = "interactive"  # "interactive" or "scenario"
+SCENARIO_FILE = os.path.join(os.path.dirname(__file__), '..', 'data', 'test_data', 'example_ruby.yml')
 
 # Database Configuration
 DB_DIRECTORY = os.path.join(os.path.dirname(__file__), '..', 'data')

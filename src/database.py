@@ -40,6 +40,8 @@ def init_db():
                                                                session_db_id INTEGER NOT NULL,
                                                                role TEXT NOT NULL CHECK(role IN ('user', 'assistant')),
                            content TEXT NOT NULL,
+                           model_name TEXT,
+                           scenario_name TEXT,
                            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                            FOREIGN KEY(session_db_id) REFERENCES sessions(id)
                            )
@@ -75,14 +77,14 @@ def create_session(session_id, user_db_id):
         logger.info(f"Session '{session_id}' created with DB ID {new_session_id}.")
         return new_session_id
 
-def add_message(session_db_id, role, content):
+def add_message(session_db_id, role, content, model_name=None, scenario_name=None):
     """Adds a message to the database."""
     with sqlite3.connect(config.DB_PATH) as conn:
         cursor = conn.cursor()
         logger.debug(f"Adding message for session DB ID {session_db_id}. Role: {role}, Content: {content[:50]}...")
         cursor.execute(
-            "INSERT INTO messages (session_db_id, role, content) VALUES (?, ?, ?)",
-            (session_db_id, role, content)
+            "INSERT INTO messages (session_db_id, role, content, model_name, scenario_name) VALUES (?, ?, ?, ?, ?)",
+            (session_db_id, role, content, model_name, scenario_name)
         )
         conn.commit()
         logger.info(f"Message added for session DB ID {session_db_id}.")

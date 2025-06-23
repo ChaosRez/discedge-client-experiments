@@ -16,7 +16,7 @@ class LLMClient:
             "temperature": config.TEMPERATURE,
             "seed": config.SEED,
             "stream": config.STREAM,
-            "mode": config.MODE,
+            "mode": config.INFERENCE_MODE,
             "user_id": config.USER_ID,
         }
         if session_id:

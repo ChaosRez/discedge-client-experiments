@@ -3,6 +3,8 @@ import database
 from llm_client import LLMClient
 import logging
 import os
+import yaml
+import sys
 
 def setup_logging():
     """Sets up logging configuration."""
@@ -18,11 +20,71 @@ def setup_logging():
 
 logger = logging.getLogger(__name__)
 
-def main():
-    """Main application loop."""
-    setup_logging()
-    logger.info("Application starting.")
-    database.init_db()
+def run_scenario(scenario_path: str):
+    """Runs a pre-defined scenario from a YAML file."""
+    logger.info(f"Starting scenario mode with file: {scenario_path}")
+    try:
+        with open(scenario_path, 'r') as f:
+            scenario = yaml.safe_load(f)
+    except FileNotFoundError:
+        logger.error(f"Scenario file not found: {scenario_path}")
+        print(f"Error: Scenario file not found at {scenario_path}", file=sys.stderr)
+        sys.exit(1)
+    except yaml.YAMLError as e:
+        logger.error(f"Error parsing YAML file: {e}")
+        print(f"Error: Could not parse scenario file: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    scenario_name = scenario.get("name", "Unnamed Scenario")
+    user_id = scenario.get("user_id", config.USER_ID)
+    model_name = scenario.get("model_name")
+    if model_name:
+        config.MODEL = model_name # NOTE: monkey patching config.MODEL
+        logger.debug(f"Using model from scenario: {config.MODEL}")
+    messages = scenario.get("messages", [])
+
+    if not messages:
+        logger.warning(f"No messages found in scenario file: {scenario_path}")
+        print("Scenario file contains no messages. Exiting.")
+        return
+
+    logger.info(f"Running scenario: '{scenario_name}' for user: '{user_id}'")
+    print(f"--- Running scenario: {scenario_name} ---")
+
+    user_db_id = database.add_user_if_not_exists(user_id)
+    client = LLMClient(config.API_URL)
+
+    server_session_id = None
+    session_db_id = None
+
+    for prompt in messages:
+        print(f"You: {prompt}")
+        logger.info(f"Sending prompt for session {server_session_id}: {prompt}")
+        response = client.send_completion(prompt, server_session_id)
+
+        if response:
+            if server_session_id is None:
+                server_session_id = response.get("session_id")
+                logger.info(f"New session ID from server: {server_session_id}")
+                if server_session_id:
+                    session_db_id = database.create_session(server_session_id, user_db_id)
+                else:
+                    logger.error("Did not receive session_id from server.")
+                    print("Error: Did not receive session_id from server.")
+                    continue
+
+            database.add_message(session_db_id, "user", prompt, model_name=config.MODEL, scenario_name=scenario_name)
+
+            content = response.get("content", "Sorry, I could not get a response.")
+            logger.info(f"Assistant response: {content}")
+            print(f"Assistant:{content.strip()}")
+            database.add_message(session_db_id, "assistant", content.strip(), model_name=config.MODEL, scenario_name=scenario_name)
+        else:
+            logger.error("No response from LLM client.")
+
+def run_interactive_mode():
+    """Handles the interactive chat session."""
+    logger.info("Starting interactive mode.")
     user_db_id = database.add_user_if_not_exists(config.USER_ID)
     client = LLMClient(config.API_URL)
 
@@ -59,15 +121,35 @@ def main():
                     continue
 
             # Save user message
-            database.add_message(session_db_id, "user", prompt)
+            database.add_message(session_db_id, "user", prompt, model_name=config.MODEL)
 
             # Print and save assistant response
             content = response.get("content", "Sorry, I could not get a response.")
             logger.info(f"Assistant response: {content}")
             print(f"Assistant:{content}")
-            database.add_message(session_db_id, "assistant", content.strip())
+            database.add_message(session_db_id, "assistant", content.strip(), model_name=config.MODEL)
         else:
             logger.error("No response from LLM client.")
+
+def main():
+    """Main application loop."""
+    setup_logging()
+
+    logger.info("Application starting.")
+    database.init_db()
+
+    if config.MODE == "interactive":
+        run_interactive_mode()
+    elif config.MODE == "scenario":
+        if not config.SCENARIO_FILE or not os.path.exists(config.SCENARIO_FILE):
+            logger.error(f"Scenario file not found or not configured: {config.SCENARIO_FILE}")
+            print("Error: Scenario file not found or not configured in src/config.py.", file=sys.stderr)
+            sys.exit(1)
+        run_scenario(config.SCENARIO_FILE)
+    else:
+        logger.error(f"Invalid mode in config: '{config.MODE}'. Use 'interactive' or 'scenario'.")
+        print(f"Error: Invalid mode '{config.MODE}' in config.py. Use 'interactive' or 'scenario'.", file=sys.stderr)
+        sys.exit(1)
 
 if __name__ == "__main__":
     main()
