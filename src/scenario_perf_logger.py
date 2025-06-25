@@ -20,16 +20,25 @@ class PerformanceLogger:
 
         self.file = open(self.filepath, 'w', newline='', encoding='utf-8')
         self.writer = csv.writer(self.file)
-        self.headers = ['Timestamp', 'Operation', 'DurationMs', 'InferenceMode', 'ScenarioName', 'SessionID', 'Details']
+        self.headers = [
+            'Timestamp', 'Operation', 'DurationMs', 'InferenceMode', 'ScenarioName', 'SessionID',
+            'Turn', 'PromptLength', 'PromptTokens', 'PromptProcMs', 'PredictedTokens', 'PredictedMs',
+            'TokensCached', 'TokensEvaluated', 'ContextProcessed', 'Details'
+        ]
         self.writer.writerow(self.headers)
 
     def set_session_id(self, session_id: str):
         """Sets the session ID for subsequent log entries."""
         self.session_id = session_id
 
-    def log(self, operation: str, duration_ms: float, details: str = ""):
+    def log(self, operation: str, duration_ms: float, details: dict = None):
         """Logs a single performance record."""
         timestamp = datetime.now().isoformat()
+        if details is None:
+            details = {}
+
+        details_str = details.get('error', '')
+
         row = [
             timestamp,
             operation,
@@ -37,7 +46,16 @@ class PerformanceLogger:
             self.inference_mode,
             self.scenario_name,
             self.session_id,
-            details
+            details.get('turn', ''),
+            details.get('prompt_length', ''),
+            details.get('prompt_tokens', ''),
+            details.get('prompt_proc_ms', ''),
+            details.get('predicted_tokens', ''),
+            details.get('predicted_ms', ''),
+            details.get('tokens_cached', ''),
+            details.get('tokens_evaluated', ''),
+            details.get('context_processed', ''),
+            details_str
         ]
         self.writer.writerow(row)
         self.file.flush()  # Ensure data is written to disk immediately
@@ -45,4 +63,3 @@ class PerformanceLogger:
     def close(self):
         """Closes the CSV file."""
         self.file.close()
-

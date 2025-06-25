@@ -61,7 +61,7 @@ def run_scenario(scenario_path: str):
     server_session_id = None
     session_db_id = None
 
-    for prompt in messages:
+    for i, prompt in enumerate(messages):
         print(f"You: {prompt}")
         logger.info(f"Sending prompt for session {server_session_id}: {prompt}")
 
@@ -80,7 +80,12 @@ def run_scenario(scenario_path: str):
                 else:
                     logger.error("Did not receive session_id from server.")
                     print("Error: Did not receive session_id from server.")
-                    perf_logger.log("send_completion", duration_ms, "Error: No session_id received")
+                    log_details = {
+                        "turn": i + 1,
+                        "prompt_length": len(prompt),
+                        "error": "No session_id received"
+                    }
+                    perf_logger.log("send_completion", duration_ms, log_details)
                     continue
 
             database.add_message(session_db_id, "user", prompt, model_name=config.MODEL, scenario_name=scenario_name)
@@ -89,10 +94,28 @@ def run_scenario(scenario_path: str):
             logger.info(f"Assistant response: {content}")
             print(f"Assistant:{content.strip()}")
             database.add_message(session_db_id, "assistant", content.strip(), model_name=config.MODEL, scenario_name=scenario_name)
-            perf_logger.log("send_completion", duration_ms, f"Prompt length: {len(prompt)}")
+
+            timings = response.get("timings", {})
+            log_details = {
+                "turn": i + 1,
+                "prompt_length": len(prompt),
+                "prompt_tokens": timings.get("prompt_n"),
+                "prompt_proc_ms": timings.get("prompt_ms"),
+                "predicted_tokens": timings.get("predicted_n"),
+                "predicted_ms": timings.get("predicted_ms"),
+                "tokens_cached": response.get("tokens_cached"),
+                "tokens_evaluated": response.get("tokens_evaluated"),
+                "context_processed": response.get("processed_context"),
+            }
+            perf_logger.log("send_completion", duration_ms, log_details)
         else:
             logger.fatal("No response from LLM client.")
-            perf_logger.log("send_completion", duration_ms, "Error: No response from client")
+            log_details = {
+                "turn": i + 1,
+                "prompt_length": len(prompt),
+                "error": "No response from client"
+            }
+            perf_logger.log("send_completion", duration_ms, log_details)
 
     perf_logger.close()
 
