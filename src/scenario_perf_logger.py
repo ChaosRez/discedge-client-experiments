@@ -22,8 +22,8 @@ class PerformanceLogger:
         self.writer = csv.writer(self.file)
         self.headers = [
             'Timestamp', 'Operation', 'DurationMs', 'InferenceMode', 'ScenarioName', 'SessionID',
-            'Turn', 'PromptLength', 'PromptTokens', 'PromptProcMs', 'PredictedTokens', 'PredictedMs',
-            'TokensCached', 'TokensEvaluated', 'ContextProcessed', 'Details'
+            'Turn', 'PromptLength', 'PromptTokens', 'PromptProcMs', 'PromptPerSecond', 'PredictedTokens', 'PredictedMs',
+            'PredictedPerSecond', 'TokensCached', 'TokensEvaluated', 'ContextProcessed', 'Details'
         ]
         self.writer.writerow(self.headers)
 
@@ -50,8 +50,10 @@ class PerformanceLogger:
             details.get('prompt_length', ''),
             details.get('prompt_tokens', ''),
             details.get('prompt_proc_ms', ''),
+            details.get('prompt_per_second', ''),
             details.get('predicted_tokens', ''),
             details.get('predicted_ms', ''),
+            details.get('predicted_per_second', ''),
             details.get('tokens_cached', ''),
             details.get('tokens_evaluated', ''),
             details.get('context_processed', ''),
