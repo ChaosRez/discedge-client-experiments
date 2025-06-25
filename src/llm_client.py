@@ -8,7 +8,7 @@ class LLMClient:
     def __init__(self, api_url):
         self.api_url = api_url
 
-    def send_completion(self, prompt, session_id=None):
+    def send_completion(self, prompt, session_id=None, turn=None):
         """Sends a prompt to the LLM API and returns the response."""
         payload = {
             "model": config.MODEL,
@@ -21,6 +21,8 @@ class LLMClient:
         }
         if session_id:
             payload["session_id"] = session_id
+        if turn is not None:
+            payload["turn"] = turn
 
         logger.debug(f"Sending payload to {self.api_url}: {payload}")
 

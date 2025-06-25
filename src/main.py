@@ -66,7 +66,7 @@ def run_scenario(scenario_path: str):
         logger.info(f"Sending prompt for session {server_session_id}: {prompt}")
 
         start_time = time.perf_counter()
-        response = client.send_completion(prompt, server_session_id)
+        response = client.send_completion(prompt, server_session_id, turn=i + 1)
         end_time = time.perf_counter()
         duration_ms = (end_time - start_time) * 1000
 
@@ -127,6 +127,7 @@ def run_interactive_mode():
 
     server_session_id = None
     session_db_id = None
+    turn = 0
 
     print("LLM Client started. Type 'new' for a new session, 'exit' or 'quit' to stop.")
 
@@ -138,12 +139,14 @@ def run_interactive_mode():
         if prompt.lower() == "new":
             server_session_id = None
             session_db_id = None
+            turn = 0
             logger.info("New session started.")
             print("--- New session started ---")
             continue
 
+        turn += 1
         logger.info(f"Sending prompt for session {server_session_id}: {prompt}")
-        response = client.send_completion(prompt, server_session_id)
+        response = client.send_completion(prompt, server_session_id, turn=turn)
 
         if response:
             # If this is the first message, create a new session in the DB
