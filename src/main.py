@@ -66,7 +66,7 @@ def run_scenario(scenario_path: str):
         logger.info(f"Sending prompt for session {server_session_id}: {prompt}")
 
         start_time = time.perf_counter()
-        response = client.send_completion(prompt, server_session_id, turn=i + 1)
+        response, status_code = client.send_completion(prompt, server_session_id, turn=i + 1)
         end_time = time.perf_counter()
         duration_ms = (end_time - start_time) * 1000
 
@@ -83,7 +83,8 @@ def run_scenario(scenario_path: str):
                     log_details = {
                         "turn": i + 1,
                         "prompt_length": len(prompt),
-                        "error": "No session_id received"
+                        "error": "No session_id received",
+                        "http_status_code": status_code
                     }
                     perf_logger.log("send_completion", duration_ms, log_details)
                     continue
@@ -108,6 +109,7 @@ def run_scenario(scenario_path: str):
                 "tokens_cached": response.get("tokens_cached"),
                 "tokens_evaluated": response.get("tokens_evaluated"),
                 "context_processed": response.get("processed_context"),
+                "http_status_code": status_code
             }
             perf_logger.log("send_completion", duration_ms, log_details)
         else:
@@ -115,9 +117,11 @@ def run_scenario(scenario_path: str):
             log_details = {
                 "turn": i + 1,
                 "prompt_length": len(prompt),
-                "error": "No response from client"
+                "error": "No response from client",
+                "http_status_code": status_code
             }
             perf_logger.log("send_completion", duration_ms, log_details)
+            break
 
     perf_logger.close()
 
@@ -148,7 +152,7 @@ def run_interactive_mode():
 
         turn += 1
         logger.info(f"Sending prompt for session {server_session_id}: {prompt}")
-        response = client.send_completion(prompt, server_session_id, turn=turn)
+        response, status_code = client.send_completion(prompt, server_session_id, turn=turn)
 
         if response:
             # If this is the first message, create a new session in the DB
@@ -171,7 +175,8 @@ def run_interactive_mode():
             print(f"Assistant:{content}")
             database.add_message(session_db_id, "assistant", content.strip(), model_name=config.MODEL)
         else:
-            logger.error("No response from LLM client.")
+            logger.fatal(f"No response from LLM client. Status: {status_code}")
+            break
 
 def main():
     """Main application loop."""

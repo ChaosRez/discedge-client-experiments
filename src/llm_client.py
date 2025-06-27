@@ -31,8 +31,9 @@ class LLMClient:
             response.raise_for_status()  # Raise an exception for bad status codes
             json_response = response.json()
             logger.debug(f"Received response: {json_response}")
-            return json_response
+            return json_response, response.status_code
         except requests.exceptions.RequestException as e:
             logger.error(f"Error communicating with LLM API: {e}")
             print(f"Error communicating with LLM API: {e}")
-            return None
+            status_code = e.response.status_code if e.response is not None else None
+            return None, status_code
