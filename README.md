@@ -37,7 +37,7 @@ The client's behavior is controlled by settings in `src/config.py`.
 
 Then, from the project root, run:
 ```bash
-python -m src.main
+for i in {1..3}; do python3 src/main.py; done
 ```
 
 ### Interactive Mode
