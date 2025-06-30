@@ -23,7 +23,7 @@ class PerformanceLogger:
         self.headers = [
             'Timestamp', 'Operation', 'DurationMs', 'InferenceMode', 'ScenarioName', 'SessionID',
             'Turn', 'PromptLength', 'PromptTokens', 'PromptProcMs', 'PromptPerSecond', 'PredictedTokens', 'PredictedMs',
-            'PredictedPerSecond', 'TokensCached', 'TokensEvaluated', 'ContextProcessed', 'HTTPStatusCode', 'Details'
+            'PredictedPerSecond', 'TokensCached', 'TokensEvaluated', 'ContextProcessed', 'HTTPStatusCode', 'ApiUrl', 'LocName', 'Details'
         ]
         self.writer.writerow(self.headers)
 
@@ -58,6 +58,8 @@ class PerformanceLogger:
             details.get('tokens_evaluated', ''),
             details.get('context_processed', ''),
             details.get('http_status_code', ''),
+            details.get('api_url', ''),
+            details.get('location_name', ''),
             details_str
         ]
         self.writer.writerow(row)

@@ -2,14 +2,14 @@ import os
 import logging
 
 # API Configuration
-API_URL = "http://localhost:8081/completion"
+DEFAULT_API_URL = "http://localhost:8081/completion"
 
 # LLM Parameters
 MODEL = "Qwen1.5-0.5B-Chat-Q4_K_M"
 TEMPERATURE = 0
 SEED = 123
 STREAM = False
-INFERENCE_MODE = "raw" # "tokenized" or "raw"
+CONTEXT_MODE = "raw" # "tokenized" or "raw" or "client-side"
 
 # Application Settings
 USER_ID = "u1"

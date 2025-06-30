@@ -43,85 +43,116 @@ def run_scenario(scenario_path: str):
     if model_name:
         config.MODEL = model_name # NOTE: monkey patching config.MODEL
         logger.debug(f"Using model from scenario: {config.MODEL}")
-    messages = scenario.get("messages", [])
 
-    if not messages:
-        logger.warning(f"No messages found in scenario file: {scenario_path}")
-        print("Scenario file contains no messages. Exiting.")
+    # Support both single message list and location-based scenarios
+    messages = scenario.get("messages", [])
+    locations = scenario.get("locations")
+
+    if not messages and not locations:
+        logger.warning(f"No messages or locations found in scenario file: {scenario_path}")
+        print("Scenario file contains no messages or locations. Exiting.")
         return
 
     logger.info(f"Running scenario: '{scenario_name}' for user: '{user_id}'")
     print(f"--- Running scenario: {scenario_name} ---")
 
-    perf_logger = PerformanceLogger(inference_mode=config.INFERENCE_MODE, scenario_name=scenario_name)
+    perf_logger = PerformanceLogger(inference_mode=config.CONTEXT_MODE, scenario_name=scenario_name)
 
     user_db_id = database.add_user_if_not_exists(user_id)
-    client = LLMClient(config.API_URL)
 
     server_session_id = None
     session_db_id = None
+    turn_counter = 0
 
-    for i, prompt in enumerate(messages):
-        print(f"You: {prompt}")
-        logger.info(f"Sending prompt for session {server_session_id}: {prompt}")
+    # Normalize to location-based structure for unified processing
+    if not locations:
+        locations = [{"name": "DefaultLocation", "api_url": config.DEFAULT_API_URL, "messages": messages}]
 
-        start_time = time.perf_counter()
-        response, status_code = client.send_completion(prompt, server_session_id, turn=i + 1)
-        end_time = time.perf_counter()
-        duration_ms = (end_time - start_time) * 1000
+    # Instantiate the client once
+    client = LLMClient(locations[0].get("api_url"))
 
-        if response:
-            if server_session_id is None:
-                server_session_id = response.get("session_id")
-                perf_logger.set_session_id(server_session_id)
-                logger.info(f"New session ID from server: {server_session_id}")
-                if server_session_id:
-                    session_db_id = database.create_session(server_session_id, user_db_id)
-                else:
-                    logger.error("Did not receive session_id from server.")
-                    print("Error: Did not receive session_id from server.")
-                    log_details = {
-                        "turn": i + 1,
-                        "prompt_length": len(prompt),
-                        "error": "No session_id received",
-                        "http_status_code": status_code
-                    }
-                    perf_logger.log("send_completion", duration_ms, log_details)
-                    continue
+    for location in locations:
+        location_name = location.get("name", "UnnamedLocation")
+        api_url = location.get("api_url")
+        location_messages = location.get("messages", [])
+        if not api_url or not location_messages:
+            logger.warning(f"Skipping invalid location in scenario: {location}")
+            continue
 
-            database.add_message(session_db_id, "user", prompt, model_name=config.MODEL, scenario_name=scenario_name)
+        client.set_api_url(api_url)
+        print(f"--- Moving to new location: {location_name} ({api_url}) ---")
 
-            content = response.get("content", "Sorry, I could not get a response.")
-            logger.info(f"Assistant response: {content}")
-            print(f"Assistant:{content.strip()}")
-            database.add_message(session_db_id, "assistant", content.strip(), model_name=config.MODEL, scenario_name=scenario_name)
+        for prompt in location_messages:
+            turn_counter += 1
+            print(f"You: {prompt}")
+            logger.info(f"Sending prompt for session {server_session_id}: {prompt}")
 
-            timings = response.get("timings", {})
-            log_details = {
-                "turn": i + 1,
-                "prompt_length": len(prompt),
-                "prompt_tokens": timings.get("prompt_n"),
-                "prompt_proc_ms": timings.get("prompt_ms"),
-                "prompt_per_second": timings.get("prompt_per_second"),
-                "predicted_tokens": timings.get("predicted_n"),
-                "predicted_ms": timings.get("predicted_ms"),
-                "predicted_per_second": timings.get("predicted_per_second"),
-                "tokens_cached": response.get("tokens_cached"),
-                "tokens_evaluated": response.get("tokens_evaluated"),
-                "context_processed": response.get("processed_context"),
-                "http_status_code": status_code
-            }
-            perf_logger.log("send_completion", duration_ms, log_details)
-        else:
-            logger.fatal("No response from LLM client.")
-            log_details = {
-                "turn": i + 1,
-                "prompt_length": len(prompt),
-                "error": "No response from client",
-                "http_status_code": status_code
-            }
-            perf_logger.log("send_completion", duration_ms, log_details)
-            break
+            start_time = time.perf_counter()
+            response, status_code = client.send_completion(prompt, server_session_id, turn=turn_counter)
+            end_time = time.perf_counter()
+            duration_ms = (end_time - start_time) * 1000
+
+            if response:
+                if server_session_id is None:
+                    server_session_id = response.get("session_id")
+                    perf_logger.set_session_id(server_session_id)
+                    logger.info(f"New session ID from server: {server_session_id}")
+                    if server_session_id:
+                        session_db_id = database.create_session(server_session_id, user_db_id)
+                    else:
+                        logger.error("Did not receive session_id from server.")
+                        print("Error: Did not receive session_id from server.")
+                        log_details = {
+                            "turn": turn_counter,
+                            "prompt_length": len(prompt),
+                            "error": "No session_id received",
+                            "http_status_code": status_code,
+                            "api_url": api_url,
+                            "location_name": location_name
+                        }
+                        perf_logger.log("send_completion", duration_ms, log_details)
+                        continue
+
+                database.add_message(session_db_id, "user", prompt, model_name=config.MODEL, scenario_name=scenario_name)
+
+                content = response.get("content", "Sorry, I could not get a response.")
+                logger.info(f"Assistant response: {content}")
+                print(f"Assistant:{content.strip()}")
+                database.add_message(session_db_id, "assistant", content.strip(), model_name=config.MODEL, scenario_name=scenario_name)
+
+                timings = response.get("timings", {})
+                log_details = {
+                    "turn": turn_counter,
+                    "prompt_length": len(prompt),
+                    "prompt_tokens": timings.get("prompt_n"),
+                    "prompt_proc_ms": timings.get("prompt_ms"),
+                    "prompt_per_second": timings.get("prompt_per_second"),
+                    "predicted_tokens": timings.get("predicted_n"),
+                    "predicted_ms": timings.get("predicted_ms"),
+                    "predicted_per_second": timings.get("predicted_per_second"),
+                    "tokens_cached": response.get("tokens_cached"),
+                    "tokens_evaluated": response.get("tokens_evaluated"),
+                    "context_processed": response.get("processed_context"),
+                    "http_status_code": status_code,
+                    "api_url": api_url,
+                    "location_name": location_name
+                }
+                perf_logger.log("send_completion", duration_ms, log_details)
+            else:
+                logger.fatal("No response from LLM client.")
+                log_details = {
+                    "turn": turn_counter,
+                    "prompt_length": len(prompt),
+                    "error": "No response from client",
+                    "http_status_code": status_code,
+                    "api_url": api_url,
+                    "location_name": location_name
+                }
+                perf_logger.log("send_completion", duration_ms, log_details)
+                break
+        else: # continue if inner loop wasn't broken
+            continue
+        break # break outer loop if inner loop was broken
 
     perf_logger.close()
 
@@ -129,7 +160,7 @@ def run_interactive_mode():
     """Handles the interactive chat session."""
     logger.info("Starting interactive mode.")
     user_db_id = database.add_user_if_not_exists(config.USER_ID)
-    client = LLMClient(config.API_URL)
+    client = LLMClient(config.DEFAULT_API_URL)
 
     server_session_id = None
     session_db_id = None
