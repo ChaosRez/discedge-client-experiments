@@ -39,6 +39,7 @@ def run_scenario(scenario_path: str):
 
     scenario_name = scenario.get("name", "Unnamed Scenario")
     user_id = scenario.get("user_id", config.USER_ID)
+    config.USER_ID = user_id  # NOTE monkey patching config.DEFAULT_USER_ID
     model_name = scenario.get("model_name")
     if model_name:
         config.MODEL = model_name # NOTE: monkey patching config.MODEL
@@ -133,6 +134,7 @@ def run_scenario(scenario_path: str):
                     "tokens_cached": response.get("tokens_cached"),
                     "tokens_evaluated": response.get("tokens_evaluated"),
                     "context_processed": response.get("processed_context"),
+                    "retries": response.get("retries"),
                     "http_status_code": status_code,
                     "api_url": api_url,
                     "location_name": location_name

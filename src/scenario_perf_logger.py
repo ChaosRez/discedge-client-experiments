@@ -23,7 +23,7 @@ class PerformanceLogger:
         self.headers = [
             'Timestamp', 'Operation', 'DurationMs', 'InferenceMode', 'ScenarioName', 'SessionID',
             'Turn', 'PromptLength', 'PromptTokens', 'PromptProcMs', 'PromptPerSecond', 'PredictedTokens', 'PredictedMs',
-            'PredictedPerSecond', 'TokensCached', 'TokensEvaluated', 'ContextProcessed', 'HTTPStatusCode', 'ApiUrl', 'LocName', 'Details'
+            'PredictedPerSecond', 'TokensCached', 'TokensEvaluated', 'ContextProcessed', 'HTTPStatusCode', 'ApiUrl', 'LocName', 'Retries', 'Details'
         ]
         self.writer.writerow(self.headers)
 
@@ -60,6 +60,7 @@ class PerformanceLogger:
             details.get('http_status_code', ''),
             details.get('api_url', ''),
             details.get('location_name', ''),
+            details.get('retries', ''),
             details_str
         ]
         self.writer.writerow(row)
