@@ -22,8 +22,8 @@ class PerformanceLogger:
         self.writer = csv.writer(self.file)
         self.headers = [
             'Timestamp', 'Operation', 'DurationMs', 'InferenceMode', 'ScenarioName', 'SessionID',
-            'Turn', 'PromptLength', 'PromptTokens', 'PromptProcMs', 'PromptPerSecond', 'PredictedTokens', 'PredictedMs',
-            'PredictedPerSecond', 'TokensCached', 'TokensEvaluated', 'ContextProcessed', 'HTTPStatusCode', 'ApiUrl', 'LocName', 'Retries', 'Details'
+            'Turn', 'PromptLength', 'ContextLength', 'PromptTokens', 'PromptProcMs', 'PromptPerSecond', 'PredictedTokens', 'PredictedMs',
+            'PredictedPerSecond', 'TokensCached', 'TokensEvaluated', 'ContextProcessed', 'RequestSize', 'HTTPStatusCode', 'ApiUrl', 'LocName', 'Retries', 'Details'
         ]
         self.writer.writerow(self.headers)
 
@@ -48,6 +48,7 @@ class PerformanceLogger:
             self.session_id,
             details.get('turn', ''),
             details.get('prompt_length', ''),
+            details.get('context_length', ''),
             details.get('prompt_tokens', ''),
             details.get('prompt_proc_ms', ''),
             details.get('prompt_per_second', ''),
@@ -57,6 +58,7 @@ class PerformanceLogger:
             details.get('tokens_cached', ''),
             details.get('tokens_evaluated', ''),
             details.get('context_processed', ''),
+            details.get('request_size', ''),
             details.get('http_status_code', ''),
             details.get('api_url', ''),
             details.get('location_name', ''),

@@ -59,10 +59,9 @@ def run_scenario(scenario_path: str):
 
     perf_logger = PerformanceLogger(inference_mode=config.CONTEXT_MODE, scenario_name=scenario_name)
 
-    user_db_id = database.add_user_if_not_exists(user_id)
+    database.create_user(user_id)
 
     server_session_id = None
-    session_db_id = None
     turn_counter = 0
 
     # Normalize to location-based structure for unified processing
@@ -86,10 +85,29 @@ def run_scenario(scenario_path: str):
         for prompt in location_messages:
             turn_counter += 1
             print(f"You: {prompt}")
-            logger.info(f"Sending prompt for session {server_session_id}: {prompt}")
+
+            # In client-side mode, create a session locally if one doesn't exist
+            if config.CONTEXT_MODE == "client-side" and server_session_id is None:
+                server_session_id = database.create_session(user_id)
+                perf_logger.set_session_id(server_session_id)
+                logger.info(f"New client-side session created: {server_session_id}")
+
+            effective_prompt = prompt
+            context_len = 0
+            # For client-side context, we build the context from the DB and send it with the prompt
+            if config.CONTEXT_MODE == "client-side" and server_session_id is not None:
+                context, _ = database.get_session_context_and_turn(server_session_id)
+                context_len = len(context)
+                effective_prompt = context + f"<|im_start|>user\n{prompt}<|im_end|>\n"
+                logger.debug(f"Client-side context generated (length: {context_len}) for session_id {server_session_id}")
+
+            # In client-side mode, we don't want the server to use its session context.
+            current_server_session_id = None if config.CONTEXT_MODE == "client-side" else server_session_id
+
+            logger.info(f"Sending prompt for session {current_server_session_id}: {prompt}")
 
             start_time = time.perf_counter()
-            response, status_code = client.send_completion(prompt, server_session_id, turn=turn_counter)
+            response, status_code = client.send_completion(effective_prompt, current_server_session_id, turn=turn_counter)
             end_time = time.perf_counter()
             duration_ms = (end_time - start_time) * 1000
 
@@ -99,32 +117,35 @@ def run_scenario(scenario_path: str):
                     perf_logger.set_session_id(server_session_id)
                     logger.info(f"New session ID from server: {server_session_id}")
                     if server_session_id:
-                        session_db_id = database.create_session(server_session_id, user_db_id)
+                        database.create_session(user_id, session_id=server_session_id)
                     else:
                         logger.error("Did not receive session_id from server.")
                         print("Error: Did not receive session_id from server.")
                         log_details = {
                             "turn": turn_counter,
                             "prompt_length": len(prompt),
+                            "context_length": context_len,
                             "error": "No session_id received",
                             "http_status_code": status_code,
                             "api_url": api_url,
-                            "location_name": location_name
+                            "location_name": location_name,
+                            "request_size": response.get("request_size") if response else None
                         }
                         perf_logger.log("send_completion", duration_ms, log_details)
                         continue
 
-                database.add_message(session_db_id, "user", prompt, model_name=config.MODEL, scenario_name=scenario_name)
+                database.add_message(server_session_id, "user", prompt, model_name=config.MODEL, scenario_name=scenario_name)
 
                 content = response.get("content", "Sorry, I could not get a response.")
                 logger.info(f"Assistant response: {content}")
                 print(f"Assistant:{content.strip()}")
-                database.add_message(session_db_id, "assistant", content.strip(), model_name=config.MODEL, scenario_name=scenario_name)
+                database.add_message(server_session_id, "assistant", content.strip(), model_name=config.MODEL, scenario_name=scenario_name)
 
                 timings = response.get("timings", {})
                 log_details = {
                     "turn": turn_counter,
                     "prompt_length": len(prompt),
+                    "context_length": context_len,
                     "prompt_tokens": timings.get("prompt_n"),
                     "prompt_proc_ms": timings.get("prompt_ms"),
                     "prompt_per_second": timings.get("prompt_per_second"),
@@ -134,6 +155,7 @@ def run_scenario(scenario_path: str):
                     "tokens_cached": response.get("tokens_cached"),
                     "tokens_evaluated": response.get("tokens_evaluated"),
                     "context_processed": response.get("processed_context"),
+                    "request_size": response.get("request_size"),
                     "retries": response.get("retries"),
                     "http_status_code": status_code,
                     "api_url": api_url,
@@ -145,6 +167,7 @@ def run_scenario(scenario_path: str):
                 log_details = {
                     "turn": turn_counter,
                     "prompt_length": len(prompt),
+                    "context_length": context_len,
                     "error": "No response from client",
                     "http_status_code": status_code,
                     "api_url": api_url,
@@ -161,11 +184,10 @@ def run_scenario(scenario_path: str):
 def run_interactive_mode():
     """Handles the interactive chat session."""
     logger.info("Starting interactive mode.")
-    user_db_id = database.add_user_if_not_exists(config.USER_ID)
+    database.create_user(config.USER_ID)
     client = LLMClient(config.DEFAULT_API_URL)
 
     server_session_id = None
-    session_db_id = None
     turn = 0
 
     print("LLM Client started. Type 'new' for a new session, 'exit' or 'quit' to stop.")
@@ -177,15 +199,30 @@ def run_interactive_mode():
             break
         if prompt.lower() == "new":
             server_session_id = None
-            session_db_id = None
             turn = 0
             logger.info("New session started.")
             print("--- New session started ---")
             continue
 
         turn += 1
-        logger.info(f"Sending prompt for session {server_session_id}: {prompt}")
-        response, status_code = client.send_completion(prompt, server_session_id, turn=turn)
+
+        # In client-side mode, create a session locally if one doesn't exist
+        if config.CONTEXT_MODE == "client-side" and server_session_id is None:
+            server_session_id = database.create_session(config.USER_ID)
+            logger.info(f"New client-side session created: {server_session_id}")
+
+        effective_prompt = prompt
+        # For client-side context, we build the context from the DB and send it with the prompt
+        if config.CONTEXT_MODE == "client-side" and server_session_id is not None:
+            context, _ = database.get_session_context_and_turn(server_session_id)
+            effective_prompt = context + f"<|im_start|>user\n{prompt}<|im_end|>\n"
+            logger.debug(f"Client-side context generated (length: {len(context)}) for session_id {server_session_id}")
+
+        # In client-side mode, we don't want the server to use its session context.
+        current_server_session_id = None if config.CONTEXT_MODE == "client-side" else server_session_id
+
+        logger.info(f"Sending prompt for session {current_server_session_id}: {prompt}")
+        response, status_code = client.send_completion(effective_prompt, current_server_session_id, turn=turn)
 
         if response:
             # If this is the first message, create a new session in the DB
@@ -193,20 +230,20 @@ def run_interactive_mode():
                 server_session_id = response.get("session_id")
                 logger.info(f"New session ID from server: {server_session_id}")
                 if server_session_id:
-                    session_db_id = database.create_session(server_session_id, user_db_id)
+                    database.create_session(config.USER_ID, session_id=server_session_id)
                 else:
                     logger.error("Did not receive session_id from server.")
                     print("Error: Did not receive session_id from server.")
                     continue
 
             # Save user message
-            database.add_message(session_db_id, "user", prompt, model_name=config.MODEL)
+            database.add_message(server_session_id, "user", prompt, model_name=config.MODEL)
 
             # Print and save assistant response
             content = response.get("content", "Sorry, I could not get a response.")
             logger.info(f"Assistant response: {content}")
             print(f"Assistant:{content}")
-            database.add_message(session_db_id, "assistant", content.strip(), model_name=config.MODEL)
+            database.add_message(server_session_id, "assistant", content.strip(), model_name=config.MODEL)
         else:
             logger.fatal(f"No response from LLM client. Status: {status_code}")
             break

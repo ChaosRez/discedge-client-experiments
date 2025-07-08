@@ -33,7 +33,10 @@ The client's behavior is controlled by settings in `src/config.py`.
 
 1.  Open `src/config.py`.
 2.  Set the `MODE` variable to `"interactive"` or `"scenario"`.
-3.  If using `"scenario"` mode, make sure `SCENARIO_FILE` points to a valid scenario file.
+3.  Set the `CONTEXT_MODE` variable. Options are:
+    *   `"tokenized"` or `"raw"`: The server manages the session context.
+    *   `"client-side"`: The client manages the session context, sending the full history with each request.
+4.  If using `"scenario"` mode, make sure `SCENARIO_FILE` points to a valid scenario file.
 
 Then, from the project root, run:
 ```bash
