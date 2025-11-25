@@ -11,26 +11,9 @@ The client is designed to simulate a mobile user interacting with geo-distribute
     *   `raw`: Sends raw text context (server manages storage).
     *   `tokenized`: Sends tokenized context (server manages storage).
     *   `client-side`: Client stores full context and sends it with every request.
-*   **Mobility Simulation:** Automatically switches between configured edge nodes after a set number of conversation turns to simulate roaming.
+*   **Mobility Simulation:** Scenario files can define a sequence of "locations," each with a different edge node API URL. The client automatically switches between these nodes to simulate a roaming user.
+*   **Performance Logging:** Automatically logs detailed performance metrics for each conversation turn to a CSV file, including timings, token counts, and context information. This is useful for benchmarking different context modes.
 *   **Consistency Checks:** Implements a turn-counter mechanism to validate session consistency with the edge nodes.
-
-
-## Project Structure
-
-```
-.
-├── README.md
-├── requirements.txt
-├── data
-│   └── test_data
-└── src
-    ├── config.py
-    ├── database.py
-    ├── llm_client.py
-    └── main.py
-```
-
-The `data/` directory will be created automatically to store the `chat.db` SQLite file.
 
 ## Setup
 
@@ -49,9 +32,9 @@ The client's behavior is controlled by settings in `src/config.py`.
 3.  Set the `CONTEXT_MODE` variable. Options are:
     *   `"tokenized"` or `"raw"`: The server manages the session context.
     *   `"client-side"`: The client manages the session context, sending the full history with each request.
-4.  If using `"scenario"` mode, make sure `SCENARIO_FILE` points to a valid scenario file.
+4.  If using `"scenario"` mode, make sure `SCENARIO_FILE` points to a valid scenario file (e.g., `data/test_data/example_robo_longer.yml`).
 
-Then, from the project root, run:
+Then, from the project root, run (to run multiple times):
 ```bash
 source .venv/bin/activate
 for i in {1..3}; do python3 src/main.py; done
@@ -73,4 +56,4 @@ When `MODE` is set to `"scenario"`, the client will automatically run the conver
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License.
