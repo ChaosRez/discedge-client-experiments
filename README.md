@@ -1,6 +1,6 @@
 # DisCEdge Client Experiments
 
-This repository contains the client-side implementation and evaluation scripts for **DisCEdge**, a distributed context management system for Edge LLMs.
+This repository contains the client-side implementation and evaluation scripts for **[DisCEdge](https://github.com/ChaosRez/llm-context-management)**, a distributed context management system for Edge LLMs.
 
 These scripts were used to conduct the experiments described in the paper: *"DisCEdge: Distributed Context Management for Large Language Models at the Edge"*.
 
