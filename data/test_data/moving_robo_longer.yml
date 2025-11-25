@@ -1,0 +1,26 @@
+name: "Moving Client Robotics Test"
+model_name: "Qwen/Qwen1.5-0.5B-Chat"
+user_id: "moving_robotics_client"
+locations:
+  - name: "Node1"
+    api_url: "http://localhost:8081/completion"
+    messages:
+      - "What are the fundamental components of an autonomous mobile robot?"
+      - "You mentioned sensors. What are the most common types for obstacle avoidance?"
+  - name: "Node2"
+    api_url: "http://localhost:8081/completion"
+    messages:
+      - "Can you explain the concept of a PID controller in the context of motor control?"
+      - "Write a simple Python function for a proportional (P) controller."
+  - name: "Node1"
+    api_url: "http://localhost:8081/completion"
+    messages:
+      - "In your previous code, what do the `kp` and `error` variables represent?"
+      - "How would you modify that function to include the integral (I) component?"
+  - name: "Node2"
+    api_url: "http://localhost:8081/completion"
+    messages:
+      - "Now, let's talk about localization. What is SLAM?"
+      - "What are some of the main challenges when implementing that on a small, low-power robot?"
+      - "Can you compare the EKF SLAM and Particle Filter SLAM approaches?"
+

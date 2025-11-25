@@ -1,0 +1,13 @@
+name: "Robotics Systems test"
+model_name: "Qwen/Qwen1.5-0.5B-Chat"
+user_id: "robotics_dev_client"
+messages:
+  - "What are the fundamental components of an autonomous mobile robot?"
+  - "You mentioned sensors. What are the most common types for obstacle avoidance?"
+  - "Can you explain the concept of a PID controller in the context of motor control?"
+  - "Write a simple Python function for a proportional (P) controller."
+  - "In your previous code, what do the `kp` and `error` variables represent?"
+  - "How would you modify that function to include the integral (I) component?"
+  - "Now, let's talk about localization. What is SLAM?"
+  - "What are some of the main challenges when implementing that on a small, low-power robot?"
+  - "Can you compare the EKF SLAM and Particle Filter SLAM approaches?"

@@ -1,0 +1,24 @@
+name: "Moving Ruby Learning"
+model_name: "Qwen/Qwen1.5-0.5B-Chat"
+user_id: "ruby_user_client"
+locations:
+  - name: "M2"
+    api_url: "http://localhost:8081/completion"
+    messages:
+      - "Hello, how can I improve my Ruby skills?"
+      - "I know symbols, arrays, loops, functions, and classes. What else should I learn in this language?"
+  - name: "TX2"
+    api_url: "http://localhost:8081/completion"
+    messages:
+      - "can you compare this language to python?"
+      - "is it faster than Scala?"
+  - name: "M2"
+    api_url: "http://localhost:8081/completion"
+    messages:
+      - "write a simple Ruby program that prints 'Hello, World!'"
+      - "can you explain your code?"
+  - name: "TX2"
+    api_url: "http://localhost:8081/completion"
+    messages:
+      - "But I get an error when I run it"
+      - "can you write bubble sort in Ruby?"
