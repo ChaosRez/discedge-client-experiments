@@ -1,6 +1,19 @@
-# LLM Moving Client
+# DisCEdge Client Experiments
 
-This is a client to interact with the LLM Context Management System. It maintains conversation history in a locally to also provide a client-side session management mode.
+This repository contains the client-side implementation and evaluation scripts for **DisCEdge**, a distributed context management system for Edge LLMs.
+
+These scripts were used to conduct the experiments described in the paper: *"DisCEdge: Distributed Context Management for Large Language Models at the Edge"*.
+
+## Overview
+
+The client is designed to simulate a mobile user interacting with geo-distributed edge nodes. It supports:
+*   **Context Modes:**
+    *   `raw`: Sends raw text context (server manages storage).
+    *   `tokenized`: Sends tokenized context (server manages storage).
+    *   `client-side`: Client stores full context and sends it with every request.
+*   **Mobility Simulation:** Automatically switches between configured edge nodes after a set number of conversation turns to simulate roaming.
+*   **Consistency Checks:** Implements a turn-counter mechanism to validate session consistency with the edge nodes.
+
 
 ## Project Structure
 
@@ -40,6 +53,7 @@ The client's behavior is controlled by settings in `src/config.py`.
 
 Then, from the project root, run:
 ```bash
+source .venv/bin/activate
 for i in {1..3}; do python3 src/main.py; done
 ```
 
@@ -56,3 +70,7 @@ The client will automatically handle session IDs. The first message in a convers
 
 ### Scenario Mode
 When `MODE` is set to `"scenario"`, the client will automatically run the conversation defined in the `SCENARIO_FILE` specified in `src/config.py`.
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
