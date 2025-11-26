@@ -6,13 +6,17 @@ These scripts were used to conduct the experiments described in the paper: *"Dis
 
 ## Overview
 
-The client is designed to simulate a mobile user interacting with geo-distributed edge nodes. It supports:
+The client can operate in two main modes:
+*   **Interactive Mode:** A standard chat interface for direct interaction with the remote LLM.
+*   **Scenario Mode:** Runs automated experiments based on predefined YAML files. This mode is designed to simulate a mobile user and gather performance data for evaluation.
+
+The client supports the following features, primarily for use in scenario mode:
 *   **Context Modes:**
     *   `raw`: Sends raw text context (server manages storage).
     *   `tokenized`: Sends tokenized context (server manages storage).
     *   `client-side`: Client stores full context and sends it with every request.
 *   **Mobility Simulation:** Scenario files can define a sequence of "locations," each with a different edge node API URL. The client automatically switches between these nodes to simulate a roaming user.
-*   **Performance Logging:** Automatically logs detailed performance metrics for each conversation turn to a CSV file, including timings, token counts, and context information. This is useful for benchmarking different context modes.
+*   **Performance Logging:** Automatically logs detailed performance metrics for each conversation turn to a CSV file, including timings, token counts, and context information. This is needed for benchmarking different context modes.
 *   **Consistency Checks:** Implements a turn-counter mechanism to validate session consistency with the edge nodes.
 
 ## Setup

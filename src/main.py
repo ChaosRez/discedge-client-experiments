@@ -39,7 +39,7 @@ def run_scenario(scenario_path: str):
 
     scenario_name = scenario.get("name", "Unnamed Scenario")
     user_id = scenario.get("user_id", config.USER_ID)
-    config.USER_ID = user_id  # NOTE monkey patching config.DEFAULT_USER_ID
+    config.USER_ID = user_id  # NOTE: monkey patching config.USER_ID
     model_name = scenario.get("model_name")
     if model_name:
         config.MODEL = model_name # NOTE: monkey patching config.MODEL
