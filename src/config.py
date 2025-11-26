@@ -9,12 +9,12 @@ MODEL = "Qwen1.5-0.5B-Chat-Q4_K_M"
 TEMPERATURE = 0
 SEED = 123
 STREAM = False
-CONTEXT_MODE = "raw" # "tokenized" or "raw" or "client-side"
+CONTEXT_MODE = "tokenized" # "tokenized" or "raw" or "client-side"
 
 # Application Settings
 USER_ID = "u1"
-MODE = "interactive"  # "interactive" or "scenario"
-SCENARIO_FILE = os.path.join(os.path.dirname(__file__), '..', 'data', 'test_data', 'example_ruby.yml')
+MODE = "scenario"  # "interactive" or "scenario"
+SCENARIO_FILE = os.path.join(os.path.dirname(__file__), '..', 'data', 'test_data', 'example_robo_longer.yml')#'moving_robo_longer.yml')
 
 # Database Configuration
 DB_DIRECTORY = os.path.join(os.path.dirname(__file__), '..', 'data')
