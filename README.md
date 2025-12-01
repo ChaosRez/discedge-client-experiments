@@ -3,6 +3,24 @@
 This repository contains the client-side implementation and evaluation scripts for **[DisCEdge](https://github.com/ChaosRez/llm-context-management)**, a distributed context management system for Edge LLMs.
 
 These scripts were used to conduct the experiments described in the paper: *"DisCEdge: Distributed Context Management for Large Language Models at the Edge"*.
+## Research
+
+If you use this software in a publication, please cite it as:
+
+### Text
+
+M. Malekabbasi, M. Wang, and D. Bermbach, **DisCEdge: Distributed Context Management for Large Language Models at the Edge**, 2025. ([arXiv](https://arxiv.org/abs/2511.22599))
+
+### BibTeX
+
+```bibtex
+@article{malekabbasi2025discedge,
+  title={DisCEdge: Distributed Context Management for Large Language Models at the Edge},
+  author={Malekabbasi, Mohammadreza and Wang, Minghe and Bermbach, David},
+  year={2025},
+  url={https://arxiv.org/abs/2511.22599}
+}
+```
 
 ## Overview
 
